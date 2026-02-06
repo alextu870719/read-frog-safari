@@ -25,7 +25,7 @@ export const DEFAULT_FLOATING_BUTTON_POSITION = 0.66
 export const DEFAULT_CONFIG: Config = {
   language: {
     sourceCode: 'auto',
-    targetCode: 'cmnHant',
+    targetCode: 'cmn-Hant',
     level: 'intermediate',
   },
   providersConfig: DEFAULT_PROVIDER_CONFIG_LIST,
