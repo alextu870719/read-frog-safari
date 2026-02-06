@@ -57,7 +57,7 @@ function getRects(containerRef: RefObject<HTMLDivElement | null>): Rects | null 
 }
 
 function calculateAnchorPosition(ctx: AnchorPositionContext): SubtitlePosition {
-  const { videoRect, containerRect, controlsVisible, controlsHeight } = ctx
+  const { videoRect, containerRect, controlsVisible: _controlsVisible, controlsHeight: _controlsHeight } = ctx
   const videoHeight = videoRect.height
 
   const subtitleTop = containerRect.top - videoRect.top
@@ -73,8 +73,8 @@ function calculateAnchorPosition(ctx: AnchorPositionContext): SubtitlePosition {
 
   const subtitleBottom = videoHeight - (containerRect.bottom - videoRect.top)
   const subtitleBottomPercent = (subtitleBottom / videoHeight) * 100
-  const controlsOffsetPercent = controlsVisible ? (controlsHeight / videoHeight) * 100 : 0
-  const percent = subtitleBottomPercent - controlsOffsetPercent
+  // const controlsOffsetPercent = controlsVisible ? (controlsHeight / videoHeight) * 100 : 0
+  const percent = subtitleBottomPercent // - controlsOffsetPercent
 
   return { percent: Math.max(0, percent), anchor: 'bottom' }
 }
@@ -217,13 +217,9 @@ export function useVerticalDrag(controlsVisible: boolean, controlsHeight: number
     return setupListeners()
   }, [])
 
-  const controlsOffsetPercent = controlsVisible && position.anchor === 'bottom' && windowStyle.height > 0
-    ? (controlsHeight / windowStyle.height) * 100
-    : 0
-
   const positionStyle: SubtitlePositionStyle = position.anchor === 'top'
     ? { top: `${position.percent}%`, bottom: 'unset' }
-    : { bottom: `${position.percent + controlsOffsetPercent}%`, top: 'unset' }
+    : { bottom: `${position.percent}%`, top: 'unset' }
 
   return {
     refs: { container: containerRef, handle: handleRef },

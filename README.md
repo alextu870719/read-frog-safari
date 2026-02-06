@@ -1,5 +1,10 @@
 <div align="center"><a name="readme-top"></a>
 
+> **⚠️ 修改版本說明 / Modified Version Notice**
+> 本專案是基於原始 [Read Frog](https://github.com/mengxi-ream/read-frog) 的修改版本，針對繁體中文使用者進行優化。
+> This is a modified version of the original [Read Frog](https://github.com/mengxi-ream/read-frog), optimized for Traditional Chinese users.
+> 詳細修改內容請參閱 [MODIFICATIONS.md](./MODIFICATIONS.md) / See [MODIFICATIONS.md](./MODIFICATIONS.md) for details.
+
 [![][image-banner]][website]
 
 An open-source AI-powered language learning extension for browsers.<br/>

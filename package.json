@@ -7,6 +7,7 @@
   "description": "Read Frog browser extension for language learning",
   "scripts": {
     "build": "wxt build",
+    "build:safari": "wxt build -b safari",
     "build:firefox": "wxt build -b firefox",
     "build:analyze": "wxt build --analyze",
     "dev:local": "WXT_USE_LOCAL_PACKAGES=true wxt",
@@ -21,6 +22,7 @@
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
     "zip": "WXT_ZIP_MODE=true wxt zip",
+    "zip:safari": "WXT_ZIP_MODE=true wxt zip -b safari",
     "zip:edge": "WXT_ZIP_MODE=true wxt zip -b edge",
     "zip:firefox": "WXT_ZIP_MODE=true wxt zip -b firefox",
     "zip:all": "pnpm zip && pnpm zip:edge",

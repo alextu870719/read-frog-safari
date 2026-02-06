@@ -25,7 +25,7 @@ export const DEFAULT_FLOATING_BUTTON_POSITION = 0.66
 export const DEFAULT_CONFIG: Config = {
   language: {
     sourceCode: 'auto',
-    targetCode: 'cmn',
+    targetCode: 'cmnHant',
     level: 'intermediate',
   },
   providersConfig: DEFAULT_PROVIDER_CONFIG_LIST,
@@ -99,7 +99,7 @@ export const DEFAULT_CONFIG: Config = {
     timeThreshold: 300,
   },
   videoSubtitles: {
-    enabled: false,
+    enabled: true,
     autoStart: false,
     style: {
       displayMode: DEFAULT_DISPLAY_MODE,
