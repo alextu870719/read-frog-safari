@@ -1,11 +1,18 @@
-import { i18n } from '#imports'
-import { Icon } from '@iconify/react'
-import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
-import LoadingDots from '@/components/loading-dots'
-import { Button } from '@/components/ui/base-ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/base-ui/popover'
-import { extractErrorMessage } from '@/utils/api-error'
+import { i18n } from "#imports"
+import { Combobox as ComboboxPrimitive } from "@base-ui/react"
+import { Icon } from "@iconify/react"
+import { useMutation } from "@tanstack/react-query"
+import LoadingDots from "@/components/loading-dots"
+import { Button } from "@/components/ui/base-ui/button"
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/base-ui/combobox"
+import { extractErrorMessage } from "@/utils/error/extract-message"
 
 interface ModelsResponse {
   object: string
@@ -25,16 +32,14 @@ export function ModelSuggestionButton({
   onSelect,
   disabled,
 }: ModelSuggestionButtonProps) {
-  const [open, setOpen] = useState(false)
-
   const mutation = useMutation({
-    mutationKey: ['fetchModels', baseURL],
+    mutationKey: ["fetchModels", baseURL],
     meta: {
-      errorDescription: i18n.t('options.apiProviders.form.models.fetchError'),
+      errorDescription: i18n.t("options.apiProviders.form.models.fetchError"),
     },
     mutationFn: async () => {
       if (!apiKey) {
-        throw new Error(i18n.t('options.apiProviders.form.models.apiKeyRequired'))
+        throw new Error(i18n.t("options.apiProviders.form.models.apiKeyRequired"))
       }
 
       const response = await fetch(`${baseURL}/models`, {
@@ -47,11 +52,6 @@ export function ModelSuggestionButton({
       const data: ModelsResponse = await response.json()
       return data.data.map(m => m.id)
     },
-    onSuccess: (data) => {
-      if (data && data.length > 0) {
-        setOpen(true)
-      }
-    },
   })
 
   const handleFetch = () => {
@@ -59,11 +59,6 @@ export function ModelSuggestionButton({
       return
     mutation.reset()
     mutation.mutate()
-  }
-
-  const handleSelect = (model: string) => {
-    onSelect(model)
-    setOpen(false)
   }
 
   const isDisabled = disabled || !baseURL
@@ -74,12 +69,12 @@ export function ModelSuggestionButton({
       <Button
         type="button"
         variant="outline"
-        size="sm"
+        size="xs"
         onClick={handleFetch}
         disabled={isDisabled}
       >
         <Icon icon="tabler:list-search" className="size-3.5" />
-        {i18n.t('options.apiProviders.form.models.fetchModels')}
+        {i18n.t("options.apiProviders.form.models.fetchModels")}
       </Button>
     )
   }
@@ -87,9 +82,9 @@ export function ModelSuggestionButton({
   // Loading state
   if (mutation.isPending) {
     return (
-      <Button type="button" variant="outline" size="sm" disabled>
+      <Button type="button" variant="outline" size="xs" disabled>
         <LoadingDots className="scale-75" />
-        {i18n.t('options.apiProviders.form.models.fetchModels')}
+        {i18n.t("options.apiProviders.form.models.fetchModels")}
       </Button>
     )
   }
@@ -100,12 +95,12 @@ export function ModelSuggestionButton({
       <Button
         type="button"
         variant="outline"
-        size="sm"
+        size="xs"
         onClick={handleFetch}
         className="text-red-500 hover:text-red-500"
       >
         <Icon icon="tabler:alert-circle" className="size-3.5" />
-        {i18n.t('options.apiProviders.form.models.clickToRetry')}
+        {i18n.t("options.apiProviders.form.models.clickToRetry")}
       </Button>
     )
   }
@@ -119,34 +114,40 @@ export function ModelSuggestionButton({
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          size="xs"
           onClick={handleFetch}
         >
           <Icon icon="tabler:list" />
-          {i18n.t('options.apiProviders.form.models.noModels')}
+          {i18n.t("options.apiProviders.form.models.noModels")}
         </Button>
       )
     }
 
     return (
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger render={<Button type="button" variant="outline" size="sm" />}>
+      <Combobox
+        items={models}
+        defaultOpen
+        onValueChange={(model: string | null) => {
+          if (model)
+            onSelect(model)
+        }}
+      >
+        <ComboboxPrimitive.Trigger render={<Button type="button" variant="outline" size="xs" />}>
           <Icon icon="tabler:list" />
-          {i18n.t('options.apiProviders.form.models.selectModel')}
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-64 p-1 max-h-60 overflow-y-auto">
-          {models.map(model => (
-            <button
-              key={model}
-              type="button"
-              onClick={() => handleSelect(model)}
-              className="w-full min-w-0 rounded-sm py-1.5 px-2 text-left text-sm outline-hidden select-none hover:bg-ghost hover:text-ghost-foreground truncate"
-            >
-              {model}
-            </button>
-          ))}
-        </PopoverContent>
-      </Popover>
+          {i18n.t("options.apiProviders.form.models.selectModel")}
+        </ComboboxPrimitive.Trigger>
+        <ComboboxContent align="end" className="w-64">
+          <ComboboxInput showTrigger={false} placeholder={i18n.t("options.apiProviders.form.models.searchModels")} />
+          <ComboboxList>
+            {(model: string) => (
+              <ComboboxItem key={model} value={model}>
+                {model}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+          <ComboboxEmpty>{i18n.t("options.apiProviders.form.models.noModelsFound")}</ComboboxEmpty>
+        </ComboboxContent>
+      </Combobox>
     )
   }
 

@@ -1,18 +1,17 @@
-import type { PlatformConfig } from '@/entrypoints/subtitles.content/platforms'
-import type { SubtitlesFetcher } from '@/utils/subtitles/fetchers/types'
-import type { SubtitlesFragment, SubtitlesTranslationBlock } from '@/utils/subtitles/types'
-import { i18n } from '#imports'
-import { toast } from 'sonner'
-import { getLocalConfig } from '@/utils/config/storage'
-import { DEFAULT_SUBTITLE_POSITION, HIDE_NATIVE_CAPTIONS_STYLE_ID, NAVIGATION_HANDLER_DELAY, TRANSLATE_BUTTON_CONTAINER_ID } from '@/utils/constants/subtitles'
-import { waitForElement } from '@/utils/dom/wait-for-element'
-import { ToastSubtitlesError } from '@/utils/subtitles/errors'
-import { aiSegmentBlock } from '@/utils/subtitles/processor/ai-segmentation'
-import { createSubtitlesBlocks, findNextBlockToTranslate, updateBlockState } from '@/utils/subtitles/processor/block-strategy'
-import { translateSubtitles } from '@/utils/subtitles/processor/translator'
-import { currentSubtitleAtom, subtitlesPositionAtom, subtitlesStore, subtitlesTranslationBlocksAtom } from './atoms'
-import { renderSubtitlesTranslateButton } from './renderer/render-translate-button'
-import { SubtitlesScheduler } from './subtitles-scheduler'
+import type { PlatformConfig } from "@/entrypoints/subtitles.content/platforms"
+import type { SubtitlesFetcher } from "@/utils/subtitles/fetchers/types"
+import type { SubtitlesFragment } from "@/utils/subtitles/types"
+import { i18n } from "#imports"
+import { toast } from "sonner"
+import { getLocalConfig } from "@/utils/config/storage"
+import { DEFAULT_SUBTITLE_POSITION, HIDE_NATIVE_CAPTIONS_STYLE_ID, NAVIGATION_HANDLER_DELAY, TRANSLATE_BUTTON_CONTAINER_ID } from "@/utils/constants/subtitles"
+import { waitForElement } from "@/utils/dom/wait-for-element"
+import { ToastSubtitlesError } from "@/utils/subtitles/errors"
+import { subtitlesPositionAtom, subtitlesStore } from "./atoms"
+import { renderSubtitlesTranslateButton } from "./renderer/render-translate-button"
+import { SegmentationPipeline } from "./segmentation-pipeline"
+import { SubtitlesScheduler } from "./subtitles-scheduler"
+import { TranslationCoordinator } from "./translation-coordinator"
 
 export class UniversalVideoAdapter {
   private config: PlatformConfig
@@ -22,6 +21,13 @@ export class UniversalVideoAdapter {
   private originalSubtitles: SubtitlesFragment[] = []
   private isNativeSubtitlesHidden = false
   private cachedVideoId: string | null = null
+
+  // Non-AI path: processed fragments stored directly
+  private processedFragments: SubtitlesFragment[] = []
+  // AI path: segmentation pipeline handles processing
+  private segmentationPipeline: SegmentationPipeline | null = null
+
+  private translationCoordinator: TranslationCoordinator | null = null
 
   get videoIdChanged() {
     const currentVideoId = this.config.getVideoId?.()
@@ -47,8 +53,10 @@ export class UniversalVideoAdapter {
 
   private resetForNavigation() {
     this.destroyScheduler()
-    this.stopBlockMonitoring()
-    this.clearBlocks()
+    this.translationCoordinator?.stop()
+    this.translationCoordinator = null
+    this.processedFragments = []
+    this.segmentationPipeline = null
     this.originalSubtitles = []
     this.cachedVideoId = null
     this.subtitlesFetcher.cleanup()
@@ -69,7 +77,7 @@ export class UniversalVideoAdapter {
     ) as HTMLVideoElement | null
 
     if (!video) {
-      toast.error(i18n.t('subtitles.errors.videoNotFound'))
+      toast.error(i18n.t("subtitles.errors.videoNotFound"))
       return
     }
 
@@ -109,7 +117,7 @@ export class UniversalVideoAdapter {
   private async renderTranslateButton() {
     const controlsBar = await waitForElement(this.config.selectors.controlsBar)
     if (!controlsBar) {
-      toast.error(i18n.t('subtitles.errors.controlsBarNotFound'))
+      toast.error(i18n.t("subtitles.errors.controlsBarNotFound"))
       return
     }
 
@@ -133,7 +141,7 @@ export class UniversalVideoAdapter {
     else {
       this.subtitlesScheduler?.hide()
       this.showNativeSubtitles()
-      this.stopBlockMonitoring()
+      this.translationCoordinator?.stop()
     }
   }
 
@@ -157,7 +165,7 @@ export class UniversalVideoAdapter {
       return
     }
 
-    const style = document.createElement('style')
+    const style = document.createElement("style")
     style.id = HIDE_NATIVE_CAPTIONS_STYLE_ID
     style.textContent = `
       ${this.config.selectors.nativeSubtitles},
@@ -173,27 +181,36 @@ export class UniversalVideoAdapter {
 
   private async startTranslation() {
     try {
-      const currentVideoId = this.config.getVideoId?.() ?? ''
+      const currentVideoId = this.config.getVideoId?.() ?? ""
       this.cachedVideoId = currentVideoId
 
       const useSameTrack = await this.subtitlesFetcher.shouldUseSameTrack()
 
       if (useSameTrack) {
-        this.resetErrorBlocksToIdle()
-        this.startBlockMonitoring()
+        // Clear failed states to allow retry on resume
+        this.translationCoordinator?.clearFailed()
+        this.segmentationPipeline?.clearFailedStarts()
+        this.translationCoordinator?.start()
         return
       }
 
-      this.clearBlocks()
+      this.translationCoordinator?.stop()
+      this.translationCoordinator = null
+      this.processedFragments = []
+      this.segmentationPipeline = null
       this.subtitlesScheduler?.reset()
-      this.subtitlesScheduler?.setState('fetching')
+
+      if (!await this.subtitlesFetcher.hasAvailableSubtitles()) {
+        this.subtitlesScheduler?.setState("error", { message: i18n.t("subtitles.errors.noSubtitlesFound") })
+        return
+      }
+
+      this.subtitlesScheduler?.setState("loading")
 
       this.originalSubtitles = await this.subtitlesFetcher.fetch()
 
-      this.subtitlesScheduler?.setState('fetchSuccess')
-
       if (this.originalSubtitles.length === 0) {
-        this.subtitlesScheduler?.setState('error', { message: i18n.t('subtitles.errors.noSubtitlesFound') })
+        this.subtitlesScheduler?.setState("error", { message: i18n.t("subtitles.errors.noSubtitlesFound") })
         return
       }
 
@@ -206,138 +223,46 @@ export class UniversalVideoAdapter {
         toast.error(errorMessage)
       }
       else {
-        this.subtitlesScheduler?.setState('error', { message: errorMessage })
+        this.subtitlesScheduler?.setState("error", { message: errorMessage })
       }
     }
-  }
-
-  private resetErrorBlocksToIdle(): void {
-    const blocks = subtitlesStore.get(subtitlesTranslationBlocksAtom)
-    const updatedBlocks = blocks.map(block =>
-      block.state === 'error'
-        ? { ...block, state: 'idle' as const, fragments: block.fragments.map(f => ({ ...f, translation: '' })) }
-        : block,
-    )
-    subtitlesStore.set(subtitlesTranslationBlocksAtom, updatedBlocks)
-  }
-
-  private clearBlocks(): void {
-    subtitlesStore.set(subtitlesTranslationBlocksAtom, [])
   }
 
   private async processSubtitles() {
-    try {
-      this.subtitlesScheduler?.setState('processing')
+    const scheduler = this.subtitlesScheduler
+    if (!scheduler)
+      return
 
-      const subtitlesBlocks = createSubtitlesBlocks(this.originalSubtitles)
-      subtitlesStore.set(subtitlesTranslationBlocksAtom, subtitlesBlocks)
-
-      const video = this.subtitlesScheduler?.getVideoElement()
-      const currentTimeMs = (video?.currentTime ?? 0) * 1000
-      const firstBlockToTranslate = findNextBlockToTranslate(subtitlesBlocks, currentTimeMs)
-
-      if (firstBlockToTranslate) {
-        await this.translateSubtitlesBlock(firstBlockToTranslate)
-      }
-
-      this.startBlockMonitoring()
-
-      // Only set idle if not in error state (translateSubtitlesBlock may have set error)
-      const currentBlocks = subtitlesStore.get(subtitlesTranslationBlocksAtom)
-      const hasError = currentBlocks.some(b => b.state === 'error')
-      if (!hasError) {
-        this.subtitlesScheduler?.setState('idle')
-      }
-    }
-    catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      this.subtitlesScheduler?.setState('error', { message: errorMessage })
-    }
-  }
-
-  private async translateSubtitlesBlock(batch: SubtitlesTranslationBlock) {
     const config = await getLocalConfig()
 
-    const subtitlesBlocks = subtitlesStore.get(subtitlesTranslationBlocksAtom)
-    subtitlesStore.set(subtitlesTranslationBlocksAtom, updateBlockState(subtitlesBlocks, batch.id, 'processing'))
+    const useAiSegmentation = !!config?.videoSubtitles?.aiSegmentation
 
-    const currentSubtitle = subtitlesStore.get(currentSubtitleAtom)
-    if (!currentSubtitle) {
-      this.subtitlesScheduler?.setState('processing')
+    const videoContext = {
+      videoTitle: document.title || "",
+      subtitlesTextContent: this.originalSubtitles.map(f => f.text).join(""),
     }
 
-    try {
-      let fragmentsToTranslate = batch.fragments
-
-      // AI segmentation before translation if enabled
-      if (config?.videoSubtitles?.aiSegmentation) {
-        this.subtitlesScheduler?.setState('segmenting')
-        fragmentsToTranslate = await aiSegmentBlock(batch.fragments, config)
-      }
-
-      this.subtitlesScheduler?.setState('processing')
-      const translated = await translateSubtitles(fragmentsToTranslate)
-
-      const updatedBatches = subtitlesStore.get(subtitlesTranslationBlocksAtom)
-      subtitlesStore.set(
-        subtitlesTranslationBlocksAtom,
-        updateBlockState(updatedBatches, batch.id, 'completed'),
-      )
-
-      this.subtitlesScheduler?.supplementSubtitles(translated)
-      this.subtitlesScheduler?.setState('idle')
+    if (useAiSegmentation) {
+      this.segmentationPipeline = new SegmentationPipeline({
+        rawFragments: this.originalSubtitles,
+        getVideoElement: () => scheduler?.getVideoElement() ?? null,
+        getSourceLanguage: () => this.subtitlesFetcher.getSourceLanguage(),
+      })
     }
-    catch (error) {
-      const updatedBatches = subtitlesStore.get(subtitlesTranslationBlocksAtom)
-      subtitlesStore.set(
-        subtitlesTranslationBlocksAtom,
-        updateBlockState(updatedBatches, batch.id, 'error'),
-      )
-
-      const displayMode = config?.videoSubtitles?.style.displayMode
-      const fallbackSubtitles = batch.fragments.map(f => ({ ...f, translation: displayMode === 'translationOnly' ? f.text : '' }))
-      this.subtitlesScheduler?.supplementSubtitles(fallbackSubtitles)
-
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      this.subtitlesScheduler?.setState('error', { message: errorMessage })
+    else {
+      this.processedFragments = this.originalSubtitles
     }
-  }
 
-  private handleBlockCheck = () => {
-    if (!this.subtitlesScheduler)
-      return
-
-    const video = this.subtitlesScheduler.getVideoElement()
-
-    const currentTimeMs = video.currentTime * 1_000
-    const blocks = subtitlesStore.get(subtitlesTranslationBlocksAtom)
-
-    if (blocks.some(b => b.state === 'processing'))
-      return
-
-    const nextBlock = findNextBlockToTranslate(blocks, currentTimeMs)
-    if (nextBlock) {
-      void this.translateSubtitlesBlock(nextBlock)
-    }
-  }
-
-  private startBlockMonitoring() {
-    if (!this.subtitlesScheduler)
-      return
-
-    const video = this.subtitlesScheduler.getVideoElement()
-
-    video.addEventListener('seeked', this.handleBlockCheck)
-    video.addEventListener('timeupdate', this.handleBlockCheck)
-  }
-
-  private stopBlockMonitoring() {
-    if (!this.subtitlesScheduler)
-      return
-
-    const video = this.subtitlesScheduler.getVideoElement()
-
-    video.removeEventListener('seeked', this.handleBlockCheck)
-    video.removeEventListener('timeupdate', this.handleBlockCheck)
+    this.translationCoordinator = new TranslationCoordinator({
+      getFragments: () => this.segmentationPipeline
+        ? this.segmentationPipeline.processedFragments
+        : this.processedFragments,
+      getVideoElement: () => scheduler.getVideoElement(),
+      getCurrentState: () => scheduler.getState(),
+      segmentationPipeline: this.segmentationPipeline,
+      onTranslated: fragments => scheduler.supplementSubtitles(fragments),
+      onStateChange: (state, data) => scheduler.setState(state, data),
+    })
+    this.translationCoordinator.start(videoContext)
   }
 }

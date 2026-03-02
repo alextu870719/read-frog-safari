@@ -1,5 +1,129 @@
 # @read-frog/extension
 
+## 1.27.0
+
+### Minor Changes
+
+- [#1020](https://github.com/mengxi-ream/read-frog/pull/1020) [`b63f28f`](https://github.com/mengxi-ream/read-frog/commit/b63f28f64d6488e8d71de3564d88007f9b3078cb) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - feat: users can define their own custom ai feature
+
+### Patch Changes
+
+- [#1020](https://github.com/mengxi-ream/read-frog/pull/1020) [`b63f28f`](https://github.com/mengxi-ream/read-frog/commit/b63f28f64d6488e8d71de3564d88007f9b3078cb) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - fix: recovery mode when the program crash
+
+- [#1012](https://github.com/mengxi-ream/read-frog/pull/1012) [`25d82c4`](https://github.com/mengxi-ream/read-frog/commit/25d82c42942d8b45ffbb2bdb6613124650f048eb) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - fix(floating-button): use button element for close trigger to improve accessibility
+
+- [#1018](https://github.com/mengxi-ream/read-frog/pull/1018) [`f6b8712`](https://github.com/mengxi-ream/read-frog/commit/f6b8712107bd6517367ab3a8a72b0cc2556acf3b) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - fix: reduce frequent storage reads and writes during config init and db cleanup
+
+- [#1014](https://github.com/mengxi-ream/read-frog/pull/1014) [`369b3ce`](https://github.com/mengxi-ream/read-frog/commit/369b3cee6a8923ea4627217fefc68b384ef74933) Thanks [@ananaBMaster](https://github.com/ananaBMaster)! - fix: disable Zod JIT to avoid CSP eval violation in MV3 extensions
+
+- [#1020](https://github.com/mengxi-ream/read-frog/pull/1020) [`b63f28f`](https://github.com/mengxi-ream/read-frog/commit/b63f28f64d6488e8d71de3564d88007f9b3078cb) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - fix: better test connection error message
+
+## 1.26.1
+
+### Patch Changes
+
+- [`e1943f1`](https://github.com/mengxi-ream/read-frog/commit/e1943f1643fd70b035e583eaa75150d8cd10c416) Thanks [@ananaBMaster](https://github.com/ananaBMaster)! - fix: firefox extension id
+
+- [#958](https://github.com/mengxi-ream/read-frog/pull/958) [`f74d826`](https://github.com/mengxi-ream/read-frog/commit/f74d8267839359851adb126809c4e35202f8380b) Thanks [@Yukiniro](https://github.com/Yukiniro)! - fix(extension): fix hidden elements being translated
+
+- [#995](https://github.com/mengxi-ream/read-frog/pull/995) [`59f9bac`](https://github.com/mengxi-ream/read-frog/commit/59f9bace3dcfe5a8964205a8143a0077665de49a) Thanks [@cesaryuan](https://github.com/cesaryuan)! - fix(api-providers): sync provider options editor when switching providers
+
+- [#1006](https://github.com/mengxi-ream/read-frog/pull/1006) [`74b8744`](https://github.com/mengxi-ream/read-frog/commit/74b8744843c797cf9b7e87c4ae5d6b52747709ab) Thanks [@ananaBMaster](https://github.com/ananaBMaster)! - fix(extension): prevent spinner from being distorted into ellipse by host page CSS
+
+- [#1009](https://github.com/mengxi-ream/read-frog/pull/1009) [`c942331`](https://github.com/mengxi-ream/read-frog/commit/c9423310a9f8e4d754478b744bb20463b69af402) Thanks [@taiiiyang](https://github.com/taiiiyang)! - fix(subtitles): fix subtitles flickering on Firefox by moving display decisions into Jotai atoms
+
+- [#1008](https://github.com/mengxi-ream/read-frog/pull/1008) [`7e822cb`](https://github.com/mengxi-ream/read-frog/commit/7e822cb73881715f248afcea955f76d59da8689e) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - feat: replace agentation dev toolbar with draggable help button
+
+- [#1007](https://github.com/mengxi-ream/read-frog/pull/1007) [`5ae4de0`](https://github.com/mengxi-ream/read-frog/commit/5ae4de063c18045b2b22cf5425046b39479f883c) Thanks [@ananaBMaster](https://github.com/ananaBMaster)! - fix: make comment in youtube as block
+
+## 1.26.0
+
+### Minor Changes
+
+- [#993](https://github.com/mengxi-ream/read-frog/pull/993) [`79827cd`](https://github.com/mengxi-ream/read-frog/commit/79827cda9d0f28403b3ac969c7e492c9328cfa65) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - feat(tts): add Edge TTS as free text-to-speech provider with per-language voice config
+
+- [#982](https://github.com/mengxi-ream/read-frog/pull/982) [`d578d6a`](https://github.com/mengxi-ream/read-frog/commit/d578d6a4c486a4461c7ed565647f668852688ba4) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - refactor: remove read provider and unify per-feature provider model
+
+### Patch Changes
+
+- [#988](https://github.com/mengxi-ream/read-frog/pull/988) [`e211d9c`](https://github.com/mengxi-ream/read-frog/commit/e211d9c4eaeb1edf40b9ce1fcad7f573471334b7) Thanks [@ananaBMaster](https://github.com/ananaBMaster)! - feat(api-providers): add feature provider toggles and badge refactor
+
+- [#997](https://github.com/mengxi-ream/read-frog/pull/997) [`d1ee33d`](https://github.com/mengxi-ream/read-frog/commit/d1ee33d9d51b084af72dbfd132e5e9a3f0b14820) Thanks [@taiiiyang](https://github.com/taiiiyang)! - feat(subtitles): enable video subtitles in default config and remove subtitle beta labels in ui/docs
+
+- [#957](https://github.com/mengxi-ream/read-frog/pull/957) [`d2ee3d6`](https://github.com/mengxi-ream/read-frog/commit/d2ee3d618d0cc05252d7a7b045a3c1d31e792340) Thanks [@ishiko732](https://github.com/ishiko732)! - fix: update website URL for custom provider to correct path
+
+- [#992](https://github.com/mengxi-ream/read-frog/pull/992) [`52b6bca`](https://github.com/mengxi-ream/read-frog/commit/52b6bca44bb3b5db52085c0ba09a1f4e72385d16) Thanks [@taiiiyang](https://github.com/taiiiyang)! - fix(subtitles): fast detect no-subtitles before fetching
+
+- [#998](https://github.com/mengxi-ream/read-frog/pull/998) [`a745724`](https://github.com/mengxi-ream/read-frog/commit/a745724f49a3953e60f14cb93528bc662a486614) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - feat(tts): add offscreen audio playback and LLM language detection mode
+
+- [#954](https://github.com/mengxi-ream/read-frog/pull/954) [`306659f`](https://github.com/mengxi-ream/read-frog/commit/306659fad27d3e3c67ad2cdbd17e22bf0f33c0dd) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - fix(selection): route selection stream requests through background to bypass CORS restrictions
+
+- [#961](https://github.com/mengxi-ream/read-frog/pull/961) [`6f24070`](https://github.com/mengxi-ream/read-frog/commit/6f240701899419c3be1b704b461075393ab6bdd1) Thanks [@taiiiyang](https://github.com/taiiiyang)! - fix(subtitles): enable text selection and copy in subtitle container
+
+- [#962](https://github.com/mengxi-ream/read-frog/pull/962) [`67b75c6`](https://github.com/mengxi-ream/read-frog/commit/67b75c6836519ed6dac39e4ac323fe12f25c2253) Thanks [@taiiiyang](https://github.com/taiiiyang)! - fix(subtitles): add RTL direction and lang attributes to translation subtitles
+
+- [#1004](https://github.com/mengxi-ream/read-frog/pull/1004) [`0126569`](https://github.com/mengxi-ream/read-frog/commit/012656911820ee56a79cb760673e086b28316c3a) Thanks [@ananaBMaster](https://github.com/ananaBMaster)! - fix: css size escape character
+
+- [#989](https://github.com/mengxi-ream/read-frog/pull/989) [`6c807ae`](https://github.com/mengxi-ream/read-frog/commit/6c807aee3f377e1a12f49d30ec575d1a6decaf77) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - refactor: merge site control settings into general page
+
+- [#1000](https://github.com/mengxi-ream/read-frog/pull/1000) [`1f3fc14`](https://github.com/mengxi-ream/read-frog/commit/1f3fc141ebce81c815a9d2f376298e89538b212e) Thanks [@ananaBMaster](https://github.com/ananaBMaster)! - chore: upgrade deps
+
+- [#981](https://github.com/mengxi-ream/read-frog/pull/981) [`e0d68dd`](https://github.com/mengxi-ream/read-frog/commit/e0d68dd8011acca991659f34eac6377897162ff3) Thanks [@taiiiyang](https://github.com/taiiiyang)! - refactor(subtitles): simplify state machine and improve loading display
+
+- [#1003](https://github.com/mengxi-ream/read-frog/pull/1003) [`7c99db6`](https://github.com/mengxi-ream/read-frog/commit/7c99db6a169d09a052ba8c9b2821149b43c62772) Thanks [@ananaBMaster](https://github.com/ananaBMaster)! - build: firefox build scripts and remove useless base ui fix
+
+- [#990](https://github.com/mengxi-ream/read-frog/pull/990) [`3df025f`](https://github.com/mengxi-ream/read-frog/commit/3df025f2fdf837da5789c624db52f9013ce765ed) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - style: refine UI components, extract shared MultiLanguageCombobox, and clean up unused components
+
+## 1.25.1
+
+### Patch Changes
+
+- [#951](https://github.com/mengxi-ream/read-frog/pull/951) [`af2e930`](https://github.com/mengxi-ream/read-frog/commit/af2e930ff9a3db661ef56b6a30ffb94b12126273) Thanks [@taiiiyang](https://github.com/taiiiyang)! - fix(ui): fix slider track collapse on wide screen in video subtitles settings
+
+- [#953](https://github.com/mengxi-ream/read-frog/pull/953) [`e27858d`](https://github.com/mengxi-ream/read-frog/commit/e27858de1a833950417680cf74907fc31ef06e1e) Thanks [@taiiiyang](https://github.com/taiiiyang)! - fix(subtitles): fallback to show original subtitle in bilingual mode on translation error
+
+## 1.25.0
+
+### Minor Changes
+
+- [#930](https://github.com/mengxi-ream/read-frog/pull/930) [`a1ec67a`](https://github.com/mengxi-ream/read-frog/commit/a1ec67a8cb246843abf7a1dbe7d3c4b3e09217c1) Thanks [@taiiiyang](https://github.com/taiiiyang)! - feat(subtitles): improve subtitle container positioning and visual effects
+
+- [#933](https://github.com/mengxi-ream/read-frog/pull/933) [`4928469`](https://github.com/mengxi-ream/read-frog/commit/4928469699596946a5acec15b15b62bb992cb0c3) Thanks [@taiiiyang](https://github.com/taiiiyang)! - refactor(subtitles): replace XHR interception with direct fetch for YouTube subtitles
+
+- [#932](https://github.com/mengxi-ream/read-frog/pull/932) [`aa6cc36`](https://github.com/mengxi-ream/read-frog/commit/aa6cc36cf1d76bc3732c47a1489e4d720dfffdce) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - refactor(ui): migrate shadcn components to base-ui
+
+### Patch Changes
+
+- [#943](https://github.com/mengxi-ream/read-frog/pull/943) [`d0986d4`](https://github.com/mengxi-ream/read-frog/commit/d0986d42081c3c6dcc77944fc4fc4646da0ef72b) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - refactor(ui): consolidate UI components under src/components/ui/
+
+- [#923](https://github.com/mengxi-ream/read-frog/pull/923) [`955dafd`](https://github.com/mengxi-ream/read-frog/commit/955dafd7594d9f67d66c70f9e7b2c820fb78c6e4) Thanks [@taiiiyang](https://github.com/taiiiyang)! - feat: add custom prompts support for video subtitles translation
+
+- [#945](https://github.com/mengxi-ream/read-frog/pull/945) [`d721988`](https://github.com/mengxi-ream/read-frog/commit/d72198852a507a855906957be4510d45848d8c1b) Thanks [@taiiiyang](https://github.com/taiiiyang)! - feat(subtitles): ensure CC enabled to trigger YouTube BotGuard POT token generation
+
+- [#947](https://github.com/mengxi-ream/read-frog/pull/947) [`011519c`](https://github.com/mengxi-ream/read-frog/commit/011519c9616ebc848476fc4676002058ee75b783) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - fix(ui): close AlertDialog on action button click
+
+- [#939](https://github.com/mengxi-ream/read-frog/pull/939) [`01f0e95`](https://github.com/mengxi-ream/read-frog/commit/01f0e95a987cf5cda06177b650b7acc848189a0a) Thanks [@taiiiyang](https://github.com/taiiiyang)! - fix(subtitles): respect user's selected subtitle track on YouTube
+
+- [#929](https://github.com/mengxi-ream/read-frog/pull/929) [`ddbc50d`](https://github.com/mengxi-ream/read-frog/commit/ddbc50d4ed5b139a5b9d26f4290b89df2a801dec) Thanks [@taiiiyang](https://github.com/taiiiyang)! - fix(subtitles): prevent navigation events from hiding subtitles unexpectedly and improve AI error messages
+
+- [#924](https://github.com/mengxi-ream/read-frog/pull/924) [`d7e8c23`](https://github.com/mengxi-ream/read-frog/commit/d7e8c235c17709f7b4a872dffee6a549a0013ff0) Thanks [@sdxdlgz](https://github.com/sdxdlgz)! - fix(subtitles): auto-hide error state and harden YouTube fetcher
+
+- [#914](https://github.com/mengxi-ream/read-frog/pull/914) [`79f8702`](https://github.com/mengxi-ream/read-frog/commit/79f870279e014f6f38f739eae06c1a6b00e8e6e1) Thanks [@taiiiyang](https://github.com/taiiiyang)! - fix: handle unknown HTTP error status in YouTube subtitle fetcher
+
+- [#922](https://github.com/mengxi-ream/read-frog/pull/922) [`fa99c8a`](https://github.com/mengxi-ream/read-frog/commit/fa99c8a29bd6889e0eceb16d06cfd860129d8b55) Thanks [@flowKKo](https://github.com/flowKKo)! - feat: add retry button for translation cards
+
+- [#946](https://github.com/mengxi-ream/read-frog/pull/946) [`1f61823`](https://github.com/mengxi-ream/read-frog/commit/1f6182333746d7e3ad54e0b51cbc1a0163d9232b) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - feat(ui): replace model selector popover with searchable combobox
+
+- [#949](https://github.com/mengxi-ream/read-frog/pull/949) [`67a9310`](https://github.com/mengxi-ream/read-frog/commit/67a9310a90bbd210aac6af66edd27b02bd51397b) Thanks [@taiiiyang](https://github.com/taiiiyang)! - refactor(subtitles): replace block-based translation with on-demand strategy
+
+- [#936](https://github.com/mengxi-ream/read-frog/pull/936) [`ef84d44`](https://github.com/mengxi-ream/read-frog/commit/ef84d4445808cdfeceec51a992fd19b53c7b567a) Thanks [@ishiko732](https://github.com/ishiko732)! - perf(logger): show caller source location in browser console by using `console.bind` instead of wrapper functions
+
+- [#950](https://github.com/mengxi-ream/read-frog/pull/950) [`2d6fa6f`](https://github.com/mengxi-ream/read-frog/commit/2d6fa6f9d1242068d495ab7d1d7f71fc13c2fe02) Thanks [@taiiiyang](https://github.com/taiiiyang)! - i18n: shorten survey sidebar text and add gift emoji
+
+- [#937](https://github.com/mengxi-ream/read-frog/pull/937) [`adab0ac`](https://github.com/mengxi-ream/read-frog/commit/adab0ac62efcfec8aab0d121e213e0a844d7ca04) Thanks [@taiiiyang](https://github.com/taiiiyang)! - refactor(subtitles): unify noise filtering to fetcher layer
+
+- [#944](https://github.com/mengxi-ream/read-frog/pull/944) [`6dc3562`](https://github.com/mengxi-ream/read-frog/commit/6dc3562a991d244ffcd8d9d55b36cacbe4f9d003) Thanks [@mengxi-ream](https://github.com/mengxi-ream)! - chore: upgrade AI SDK and other dependencies
+
 ## 1.24.0
 
 ### Minor Changes

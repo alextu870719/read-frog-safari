@@ -1,11 +1,4 @@
-export type SubtitlesState
-  = | 'idle'
-    | 'fetching'
-    | 'fetchSuccess'
-    | 'fetchFailed'
-    | 'segmenting'
-    | 'processing'
-    | 'error'
+export type SubtitlesState = "idle" | "loading" | "error"
 
 export interface StateData {
   state: SubtitlesState
@@ -17,14 +10,4 @@ export interface SubtitlesFragment {
   start: number
   end: number
   translation?: string
-}
-
-export type SubtitlesTranslationBlockState = 'idle' | 'processing' | 'completed' | 'error'
-
-export interface SubtitlesTranslationBlock {
-  id: number
-  startMs: number
-  endMs: number
-  state: SubtitlesTranslationBlockState
-  fragments: SubtitlesFragment[]
 }

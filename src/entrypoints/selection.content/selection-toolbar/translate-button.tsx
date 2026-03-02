@@ -1,35 +1,26 @@
-import type { TextUIPart } from 'ai'
-import { i18n } from '#imports'
-import { Icon } from '@iconify/react'
-import { ISO6393_TO_6391, LANG_CODE_TO_EN_NAME } from '@read-frog/definitions'
-import { IconLoader2, IconVolume } from '@tabler/icons-react'
-import { readUIMessageStream, streamText } from 'ai'
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
-import { useTextToSpeech } from '@/hooks/use-text-to-speech'
-import {
-  isLLMTranslateProviderConfig,
-  isNonAPIProvider,
-  isPureAPIProvider,
-} from '@/types/config/provider'
-import { configFieldsAtomMap } from '@/utils/atoms/config'
-import { translateProviderConfigAtom, ttsProviderConfigAtom } from '@/utils/atoms/provider'
-import { getLocalConfig } from '@/utils/config/storage'
-import { getIsFirefoxExtensionEnv } from '@/utils/firefox/firefox-compat'
-import { createPortStreamPromise } from '@/utils/firefox/firefox-streaming'
-import { deeplxTranslate, googleTranslate, microsoftTranslate } from '@/utils/host/translate/api'
-import { translateTextForSelection } from '@/utils/host/translate/translate-text'
-import { getTranslatePrompt } from '@/utils/prompts/translate'
-import { getTranslateModelById } from '@/utils/providers/model'
-import { getProviderOptionsWithOverride } from '@/utils/providers/options'
+import { i18n } from "#imports"
+import { Icon } from "@iconify/react"
+import { LANG_CODE_TO_EN_NAME } from "@read-frog/definitions"
+import { IconLoader2, IconVolume } from "@tabler/icons-react"
+import { useAtom, useAtomValue, useSetAtom } from "jotai"
+import { useCallback, useEffect, useState } from "react"
+import { toast } from "sonner"
+import { useTextToSpeech } from "@/hooks/use-text-to-speech"
+import { isLLMProviderConfig } from "@/types/config/provider"
+import { configFieldsAtomMap } from "@/utils/atoms/config"
+import { featureProviderConfigAtom } from "@/utils/atoms/provider"
+import { streamBackgroundText } from "@/utils/content-script/background-stream-client"
+import { translateTextForSelection } from "@/utils/host/translate/translate-variants"
+import { getTranslatePrompt } from "@/utils/prompts/translate"
+import { resolveModelId } from "@/utils/providers/model"
+import { getProviderOptionsWithOverride } from "@/utils/providers/options"
 import {
   isSelectionToolbarVisibleAtom,
   isTranslatePopoverVisibleAtom,
   mouseClickPositionAtom,
   selectionContentAtom,
-} from './atom'
-import { PopoverWrapper } from './components/popover-wrapper'
+} from "./atom"
+import { PopoverWrapper } from "./components/popover-wrapper"
 
 export function TranslateButton() {
   // const selectionContent = useAtomValue(selectionContentAtom)
@@ -61,11 +52,10 @@ export function TranslateButton() {
 export function TranslatePopover() {
   const [isTranslating, setIsTranslating] = useState(false)
   const [translatedText, setTranslatedText] = useState<string | undefined>(undefined)
-  const translateProviderConfig = useAtomValue(translateProviderConfigAtom)
+  const translateProviderConfig = useAtomValue(featureProviderConfigAtom("selectionToolbar.translate"))
   const languageConfig = useAtomValue(configFieldsAtomMap.language)
   const selectionContent = useAtomValue(selectionContentAtom)
   const [isVisible, setIsVisible] = useAtom(isTranslatePopoverVisibleAtom)
-  const isFirefoxExtensionEnv = useMemo(() => getIsFirefoxExtensionEnv(), [])
 
   const handleClose = useCallback(() => {
     setTranslatedText(undefined)
@@ -74,7 +64,7 @@ export function TranslatePopover() {
   const handleCopy = useCallback(() => {
     if (translatedText) {
       void navigator.clipboard.writeText(translatedText)
-      toast.success('Translation copied to clipboard!')
+      toast.success("Translation copied to clipboard!")
     }
   }, [translatedText])
 
@@ -83,49 +73,41 @@ export function TranslatePopover() {
     let isCancelled = false
 
     const translate = async () => {
-      const cleanText = selectionContent?.replace(/\u200B/g, '').trim()
+      const cleanText = selectionContent?.replace(/\u200B/g, "").trim()
       if (!cleanText) {
         return
       }
-
-      const config = await getLocalConfig()
-      if (!config) {
-        throw new Error('No global config when translate text')
-      }
-
-      if (!translateProviderConfig) {
-        throw new Error(
-          `No provider config for ${config.translate.providerId} when translate text`,
-        )
-      }
-
-      const { provider } = translateProviderConfig
 
       setIsTranslating(true)
       cancelTranslation = undefined
 
       try {
-        if (isFirefoxExtensionEnv && isLLMTranslateProviderConfig(translateProviderConfig)) {
+        if (!translateProviderConfig) {
+          throw new Error("No provider config when translate text")
+        }
+
+        if (isLLMProviderConfig(translateProviderConfig)) {
           const targetLangName = LANG_CODE_TO_EN_NAME[languageConfig.targetCode]
           const {
             id: providerId,
-            models: { translate },
             provider,
             providerOptions: userProviderOptions,
+            temperature,
           } = translateProviderConfig
-          const translateModel = translate.isCustomModel ? translate.customModel : translate.model
-          const providerOptions = getProviderOptionsWithOverride(translateModel ?? '', provider, userProviderOptions)
-          const prompt = await getTranslatePrompt(targetLangName, cleanText)
+          const modelName = resolveModelId(translateProviderConfig.model)
+          const providerOptions = getProviderOptionsWithOverride(modelName ?? "", provider, userProviderOptions)
+          const { systemPrompt, prompt } = await getTranslatePrompt(targetLangName, cleanText)
 
           const abortController = new AbortController()
           cancelTranslation = () => abortController.abort()
 
-          const latestText = await createPortStreamPromise<string>(
-            'translate-text-stream',
+          const latestText = await streamBackgroundText(
             {
               providerId,
+              system: systemPrompt,
               prompt,
               providerOptions,
+              temperature,
             },
             {
               signal: abortController.signal,
@@ -142,108 +124,19 @@ export function TranslatePopover() {
           }
 
           const normalized = latestText.trim()
-          setTranslatedText(normalized === cleanText ? '' : normalized)
+          setTranslatedText(normalized === cleanText ? "" : normalized)
           return
         }
 
-        if (isFirefoxExtensionEnv) {
-          const backgroundTranslation = await translateTextForSelection(cleanText)
-          if (isCancelled) {
-            return
-          }
-          const normalized = backgroundTranslation.trim()
-          setTranslatedText(normalized === cleanText ? '' : normalized)
+        const backgroundTranslation = await translateTextForSelection(cleanText)
+        if (isCancelled) {
           return
         }
-
-        let translatedText = ''
-
-        if (isNonAPIProvider(provider)) {
-          const sourceLang
-            = languageConfig.sourceCode === 'auto'
-              ? 'auto'
-              : ISO6393_TO_6391[languageConfig.sourceCode] ?? 'auto'
-          const targetLang = ISO6393_TO_6391[languageConfig.targetCode]
-          if (!targetLang) {
-            throw new Error(`Invalid target language code: ${languageConfig.targetCode}`)
-          }
-
-          if (provider === 'google-translate') {
-            translatedText = await googleTranslate(cleanText, sourceLang, targetLang)
-          }
-          else if (provider === 'microsoft-translate') {
-            translatedText = await microsoftTranslate(cleanText, sourceLang, targetLang)
-          }
-        }
-        else if (isPureAPIProvider(provider)) {
-          const sourceLang
-            = languageConfig.sourceCode === 'auto'
-              ? 'auto'
-              : ISO6393_TO_6391[languageConfig.sourceCode] ?? 'auto'
-          const targetLang = ISO6393_TO_6391[languageConfig.targetCode]
-          if (!targetLang) {
-            throw new Error(`Invalid target language code: ${languageConfig.targetCode}`)
-          }
-
-          if (provider === 'deeplx') {
-            translatedText = await deeplxTranslate(
-              cleanText,
-              sourceLang,
-              targetLang,
-              translateProviderConfig,
-              { forceBackgroundFetch: true },
-            )
-          }
-        }
-        else if (isLLMTranslateProviderConfig(translateProviderConfig)) {
-          const targetLangName = LANG_CODE_TO_EN_NAME[languageConfig.targetCode]
-          const {
-            id: providerId,
-            models: { translate },
-            provider,
-            providerOptions: userProviderOptions2,
-          } = translateProviderConfig
-          const translateModel = translate.isCustomModel ? translate.customModel : translate.model
-          const model = await getTranslateModelById(providerId)
-
-          const providerOptions = getProviderOptionsWithOverride(translateModel ?? '', provider, userProviderOptions2)
-          const { systemPrompt, prompt } = await getTranslatePrompt(targetLangName, cleanText)
-
-          const result = streamText({
-            model,
-            system: systemPrompt,
-            prompt,
-            providerOptions,
-          })
-
-          const abortController = new AbortController()
-          cancelTranslation = () => {
-            abortController.abort()
-          }
-
-          for await (const uiMessage of readUIMessageStream({
-            stream: result.toUIMessageStream(),
-          })) {
-            if (isCancelled || abortController.signal.aborted) {
-              return
-            }
-            const lastPart = uiMessage.parts[uiMessage.parts.length - 1] as TextUIPart
-            setTranslatedText(lastPart.text)
-          }
-
-          cancelTranslation = undefined
-        }
-        else {
-          throw new Error(`Unknown provider: ${provider}`)
-        }
-
-        if (translatedText && !isLLMTranslateProviderConfig(translateProviderConfig)) {
-          translatedText = translatedText.trim()
-          setTranslatedText(translatedText === cleanText ? '' : translatedText)
-        }
+        const normalized = backgroundTranslation.trim()
+        setTranslatedText(normalized === cleanText ? "" : normalized)
       }
       catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
+        if (error instanceof DOMException && error.name === "AbortError") {
           return
         }
 
@@ -251,8 +144,10 @@ export function TranslatePopover() {
           return
         }
 
-        console.error('Translation error:', error)
-        toast.error('Translation failed')
+        console.error("Translation error:", error)
+        toast.error(i18n.t("translationHub.translationFailed"), {
+          description: error instanceof Error ? error.message : String(error),
+        })
       }
       finally {
         cancelTranslation = undefined
@@ -272,10 +167,8 @@ export function TranslatePopover() {
   }, [
     isVisible,
     selectionContent,
-    languageConfig.sourceCode,
     languageConfig.targetCode,
     translateProviderConfig,
-    isFirefoxExtensionEnv,
   ])
 
   return (
@@ -294,7 +187,7 @@ export function TranslatePopover() {
           <p className="text-sm">
             {isTranslating && !translatedText && <Icon icon="svg-spinners:3-dots-bounce" />}
             {translatedText}
-            {isTranslating && translatedText && ' ●'}
+            {isTranslating && translatedText && " ●"}
           </p>
         </div>
       </div>
@@ -322,26 +215,16 @@ export function TranslatePopover() {
 function SpeakOriginalButton() {
   const selectionContent = useAtomValue(selectionContentAtom)
   const ttsConfig = useAtomValue(configFieldsAtomMap.tts)
-  const ttsProviderConfig = useAtomValue(ttsProviderConfigAtom)
   const { play, isFetching, isPlaying } = useTextToSpeech()
 
   const handleSpeak = useCallback(async () => {
     if (!selectionContent) {
-      toast.error(i18n.t('speak.noTextSelected'))
+      toast.error(i18n.t("speak.noTextSelected"))
       return
     }
 
-    if (!ttsProviderConfig) {
-      toast.error(i18n.t('speak.openaiNotConfigured'))
-      return
-    }
-
-    void play(selectionContent, ttsConfig, ttsProviderConfig)
-  }, [selectionContent, ttsConfig, ttsProviderConfig, play])
-
-  if (!ttsProviderConfig) {
-    return null
-  }
+    void play(selectionContent, ttsConfig)
+  }, [selectionContent, ttsConfig, play])
 
   return (
     <button
@@ -349,7 +232,7 @@ function SpeakOriginalButton() {
       onClick={handleSpeak}
       disabled={isFetching || isPlaying}
       className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-      title={isFetching ? 'Fetching audio…' : isPlaying ? 'Playing audio…' : 'Speak original text'}
+      title={isFetching ? "Fetching audio…" : isPlaying ? "Playing audio…" : "Speak original text"}
     >
       {isFetching || isPlaying
         ? (

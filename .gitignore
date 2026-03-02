@@ -34,5 +34,14 @@ web-ext.config.ts
 coverage/
 .turbo/
 .nx/
+.claude/worktrees/
 
-tsconfig.local.jsonRead Frog - Open Source Immersive Translate/
+tsconfig.local.json
+
+Read Frog - Open Source Immersive Translate/
+
+docs/
+
+/repos
+
+scripts/output/

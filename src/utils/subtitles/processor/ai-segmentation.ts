@@ -1,12 +1,12 @@
-import type { SubtitlesFragment } from '../types'
-import type { Config } from '@/types/config/config'
-import { sendMessage } from '@/utils/message'
+import type { SubtitlesFragment } from "../types"
+import type { Config } from "@/types/config/config"
+import { sendMessage } from "@/utils/message"
 
 export function cleanFragmentsForAi(fragments: SubtitlesFragment[]): SubtitlesFragment[] {
   return fragments
     .map(fragment => ({
       ...fragment,
-      text: fragment.text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim(),
+      text: fragment.text.replace(/\n/g, " ").replace(/\s+/g, " ").trim(),
     }))
     .filter(fragment => fragment.text.length > 0)
 }
@@ -32,11 +32,11 @@ export function formatFragmentsToJson(fragments: SubtitlesFragment[]): string {
  */
 export function parseSimplifiedVttToFragments(vtt: string): SubtitlesFragment[] {
   const fragments: SubtitlesFragment[] = []
-  const lines = vtt.trim().split('\n')
+  const lines = vtt.trim().split("\n")
 
   let lineIndex = 0
   // Skip WEBVTT header
-  while (lineIndex < lines.length && !lines[lineIndex].includes('-->')) {
+  while (lineIndex < lines.length && !lines[lineIndex].includes("-->")) {
     lineIndex++
   }
 
@@ -52,14 +52,14 @@ export function parseSimplifiedVttToFragments(vtt: string): SubtitlesFragment[] 
       // Collect text lines
       const textLines: string[] = []
       lineIndex++
-      while (lineIndex < lines.length && lines[lineIndex].trim() !== '' && !lines[lineIndex].includes('-->')) {
+      while (lineIndex < lines.length && lines[lineIndex].trim() !== "" && !lines[lineIndex].includes("-->")) {
         textLines.push(lines[lineIndex].trim())
         lineIndex++
       }
 
       if (textLines.length > 0) {
         fragments.push({
-          text: textLines.join('\n'),
+          text: textLines.join("\n"),
           start,
           end,
         })
@@ -90,26 +90,18 @@ export async function aiSegmentBlock(
     return fragments
   }
 
-  const translateProviderId = config.translate.providerId
-
   const jsonContent = formatFragmentsToJson(cleanedFragments)
 
-  try {
-    const segmentedVtt = await sendMessage('aiSegmentSubtitles', {
-      jsonContent,
-      providerId: translateProviderId,
-    })
+  const segmentedVtt = await sendMessage("aiSegmentSubtitles", {
+    jsonContent,
+    providerId: config.videoSubtitles.providerId,
+  })
 
-    const segmentedFragments = parseSimplifiedVttToFragments(segmentedVtt)
+  const segmentedFragments = parseSimplifiedVttToFragments(segmentedVtt)
 
-    if (segmentedFragments.length === 0) {
-      return fragments
-    }
-
-    return segmentedFragments
+  if (segmentedFragments.length === 0) {
+    throw new Error("AI segmentation returned empty result")
   }
-  catch (error) {
-    console.error('AI segmentation failed:', error)
-    return fragments
-  }
+
+  return segmentedFragments
 }
