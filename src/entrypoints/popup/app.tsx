@@ -24,6 +24,27 @@ function App() {
   const initIsIgnoreTab = useSetAtom(initIsIgnoreTabAtom)
   const initSiteControlAtoms = useSetAtom(initSiteControlAtomsAtom)
 
+  const openOptions = async () => {
+    const optionsUrl = browser.runtime.getURL("/options.html#/")
+
+    try {
+      if (browser.tabs?.create) {
+        await browser.tabs.create({ url: optionsUrl })
+        return
+      }
+
+      if (browser.runtime?.openOptionsPage) {
+        await browser.runtime.openOptionsPage()
+        return
+      }
+
+      window.open(optionsUrl, "_blank", "noopener,noreferrer")
+    }
+    catch {
+      window.open(optionsUrl, "_blank", "noopener,noreferrer")
+    }
+  }
+
   useEffect(() => {
     void initIsIgnoreTab()
     void initSiteControlAtoms()
@@ -56,7 +77,7 @@ function App() {
         <button
           type="button"
           className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 hover:bg-neutral-300 dark:hover:bg-neutral-700"
-          onClick={() => browser.runtime.openOptionsPage()}
+          onClick={() => void openOptions()}
         >
           <Icon icon="tabler:settings" className="size-4" strokeWidth={1.6} />
           <span className="text-[13px] font-medium">

@@ -4,12 +4,20 @@ import { GOOGLE_DRIVE_TOKEN_STORAGE_KEY } from "../constants/config"
 import { logger } from "../logger"
 
 const GOOGLE_CLIENT_ID = import.meta.env.WXT_GOOGLE_CLIENT_ID || "YOUR_CLIENT_ID"
-const GOOGLE_REDIRECT_URI = browser.identity.getRedirectURL()
 const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/drive.appdata",
   "https://www.googleapis.com/auth/userinfo.email",
 ]
 const TOKEN_EXPIRY_BUFFER_MS = 60000
+
+function getIdentityApi() {
+  const identityApi = browser.identity
+  if (!identityApi?.getRedirectURL || !identityApi?.launchWebAuthFlow) {
+    throw new Error("Browser identity API is not available")
+  }
+
+  return identityApi
+}
 
 const googleAuthTokenSchema = z.object({
   access_token: z.string(),
@@ -56,14 +64,17 @@ async function getTokenFromStorage(): Promise<GoogleAuthToken | null> {
  */
 export async function authenticateGoogleDriveAndSaveTokenToStorage(): Promise<string> {
   try {
+    const identityApi = getIdentityApi()
+    const redirectUri = identityApi.getRedirectURL()
+
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth")
     authUrl.searchParams.set("client_id", GOOGLE_CLIENT_ID)
     authUrl.searchParams.set("response_type", "token")
-    authUrl.searchParams.set("redirect_uri", GOOGLE_REDIRECT_URI)
+    authUrl.searchParams.set("redirect_uri", redirectUri)
     authUrl.searchParams.set("scope", GOOGLE_SCOPES.join(" "))
     authUrl.searchParams.set("prompt", "select_account")
 
-    const responseUrl = await browser.identity.launchWebAuthFlow({
+    const responseUrl = await identityApi.launchWebAuthFlow({
       url: authUrl.toString(),
       interactive: true,
     })

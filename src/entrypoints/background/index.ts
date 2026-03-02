@@ -51,7 +51,23 @@ export default defineBackground({
 
     onMessage("openOptionsPage", () => {
       logger.info("openOptionsPage")
-      void browser.runtime.openOptionsPage()
+      const optionsUrl = browser.runtime.getURL("/options.html#/")
+
+      void (async () => {
+        try {
+          if (browser.tabs?.create) {
+            await browser.tabs.create({ url: optionsUrl })
+            return
+          }
+
+          if (browser.runtime?.openOptionsPage) {
+            await browser.runtime.openOptionsPage()
+          }
+        }
+        catch (error) {
+          logger.error("Failed to open options page", error)
+        }
+      })()
     })
 
     onMessage("aiSegmentSubtitles", async (message) => {

@@ -16,6 +16,7 @@ import { TooltipProvider } from "@/components/ui/base-ui/tooltip"
 import { configAtom } from "@/utils/atoms/config"
 import { getLocalConfig } from "@/utils/config/storage"
 import { DEFAULT_CONFIG } from "@/utils/constants/config"
+import { logger } from "@/utils/logger"
 import { queryClient } from "@/utils/tanstack-query"
 import App from "./app"
 import { AppSidebar } from "./app-sidebar"
@@ -33,11 +34,26 @@ function HydrateAtoms({
   return children
 }
 
+function renderInitError(root: HTMLElement, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  root.className = "antialiased bg-background p-6 text-foreground"
+  root.innerHTML = `<div class="space-y-2"><h1 class="text-lg font-semibold">Failed to open options page</h1><p class="text-sm text-muted-foreground">${message}</p></div>`
+}
+
 async function initApp() {
-  const root = document.getElementById("root")!
+  const root = document.getElementById("root")
+  if (!root)
+    return
+
   root.className = "antialiased bg-background"
 
-  const config = (await getLocalConfig()) ?? DEFAULT_CONFIG
+  let config = DEFAULT_CONFIG
+  try {
+    config = (await getLocalConfig()) ?? DEFAULT_CONFIG
+  }
+  catch (error) {
+    logger.error("Failed to read config for options page init", error)
+  }
 
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
@@ -67,4 +83,11 @@ async function initApp() {
   )
 }
 
-void initApp()
+void initApp().catch((error) => {
+  const root = document.getElementById("root")
+  if (!root)
+    return
+
+  logger.error("Options page initialization failed", error)
+  renderInitError(root, error)
+})
