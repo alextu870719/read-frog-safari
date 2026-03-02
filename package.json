@@ -30,6 +30,7 @@
     "zip:all": "DOTENV_CONFIG_QUIET=false pnpm zip && pnpm zip:safari && pnpm zip:edge && pnpm zip:firefox",
     "sync:upstream": "bash scripts/sync-upstream.sh",
     "sync:upstream:verify": "pnpm sync:upstream && pnpm type-check && pnpm test && pnpm build:safari",
+    "sync:upstream:verify:push": "pnpm sync:upstream:verify && git push origin main",
     "release": "changeset tag && git push origin --tags",
     "prepare": "husky"
   },
